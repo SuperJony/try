@@ -47,6 +47,13 @@ else
     fail "Delete script should check directory exists" "test -d 'name'" "$output" "delete_spec.md#script-components"
 fi
 
+# Test: Delete script uses an absolute rm binary
+if echo "$output" | grep -q "/bin/rm -rf"; then
+    pass
+else
+    fail "Delete script should use /bin/rm" "/bin/rm -rf" "$output" "delete_spec.md#script-components"
+fi
+
 # Test: Delete script ends with PWD restoration (falls back to tries base path)
 if echo "$output" | grep -qE 'cd .* \|\| cd '; then
     pass
@@ -89,10 +96,10 @@ fi
 
 # Test: Delete uses basename not full path in rm command
 output=$(try_run --path="$DEL_TEST_DIR" --and-keys='CTRL-D,ENTER,Y,E,S,ENTER' exec 2>/dev/null)
-if echo "$output" | grep "rm -rf" | grep -q "rm -rf '2025-"; then
+if echo "$output" | grep "/bin/rm -rf" | grep -q "/bin/rm -rf '2025-"; then
     pass
 else
-    fail "Delete should use basename in rm -rf" "rm -rf 'name'" "$output" "delete_spec.md#per-item-delete-commands"
+    fail "Delete should use basename in rm -rf" "/bin/rm -rf 'name'" "$output" "delete_spec.md#per-item-delete-commands"
 fi
 
 # Cleanup
