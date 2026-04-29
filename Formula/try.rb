@@ -9,6 +9,7 @@ class Try < Formula
   depends_on "ruby"
 
   def install
+    inreplace "try.rb", "#!/usr/bin/env ruby", "#!#{Formula["ruby"].opt_bin}/ruby"
     bin.install "try.rb" => "try"
     if build.head?
       (bin/"lib").install "lib/tui.rb"
