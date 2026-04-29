@@ -131,6 +131,7 @@ try ./path/to/repo [name]                      # Use another repo as the worktre
 try worktree dir [name]                        # Same as above, explicit CLI form
 try clone https://github.com/user/repo.git  # Clone repo into date-prefixed directory
 try https://github.com/user/repo.git        # Shorthand for clone (same as above)
+try https://github.com/user/repo/tree/main  # GitHub page links are normalized
 try --help                                   # See all options
 ```
 
@@ -155,10 +156,15 @@ try clone https://github.com/tobi/try.git my-fork
 # Shorthand syntax (no need to type 'clone')
 try https://github.com/tobi/try.git
 # Creates: 2025-08-27-tobi-try
+
+# GitHub page links are normalized before cloning
+try https://github.com/tobi/try/tree/main
+# Clones: https://github.com/tobi/try
 ```
 
 Supported git URI formats:
 - `https://github.com/user/repo.git` (HTTPS GitHub)
+- `https://github.com/user/repo/tree/main` (GitHub page link)
 - `git@github.com:user/repo.git` (SSH GitHub)
 - `https://gitlab.com/user/repo.git` (GitLab)
 - `git@host.com:user/repo.git` (SSH other hosts)

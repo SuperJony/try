@@ -69,3 +69,12 @@ if echo "$output" | grep -qE "cd '.*repo'"; then
 else
     fail "Clone output should use single-quoted paths" "single-quoted cd" "$output" "git_uri"
 fi
+
+# Test: GitHub blob URLs are normalized to the repository clone URL
+output=$(try_run --path="$TEST_TRIES" exec clone https://github.com/user/repo/blob/main/README.md 2>&1)
+clone_line=$(echo "$output" | grep "^[[:space:]]*git clone")
+if echo "$clone_line" | grep -q "git clone --branch 'main' 'https://github.com/user/repo'"; then
+    pass
+else
+    fail "GitHub blob URL should clone the repository URL" "git clone --branch 'main' 'https://github.com/user/repo'" "$output" "git_uri"
+fi

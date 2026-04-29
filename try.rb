@@ -1036,27 +1036,43 @@ if __FILE__ == $0
     end
   end
 
+  def github_page_ref(path)
+    return nil unless path
+
+    parts = path.split('/')
+    return nil unless ['tree', 'blob'].include?(parts[0])
+    return nil if parts[1].nil? || parts[1].empty?
+
+    parts[1]
+  end
+
   def parse_git_uri(uri)
-    # Remove .git suffix if present
-    uri = uri.sub(/\.git$/, '')
+    uri = uri.sub(/[?#].*$/, '')
 
     # Handle different git URI formats
-    if uri.match(%r{^https?://github\.com/([^/]+)/([^/]+)})
-      # https://github.com/user/repo
-      user, repo = $1, $2
-      return { user: user, repo: repo, host: 'github.com' }
+    if uri.match(%r{^(https?)://github\.com/([^/]+)/([^/]+)(?:/(.*))?$})
+      # https://github.com/user/repo, plus GitHub page links such as /tree/main
+      scheme, user, repo, path = $1, $2, $3, $4
+      repo = repo.sub(/\.git$/, '')
+      return {
+        user: user,
+        repo: repo,
+        host: 'github.com',
+        clone_uri: "#{scheme}://github.com/#{user}/#{repo}",
+        ref: github_page_ref(path)
+      }
     elsif uri.match(%r{^git@github\.com:([^/]+)/([^/]+)})
       # git@github.com:user/repo
-      user, repo = $1, $2
-      return { user: user, repo: repo, host: 'github.com' }
-    elsif uri.match(%r{^https?://([^/]+)/([^/]+)/([^/]+)})
+      user, repo = $1, $2.sub(/\.git$/, '')
+      return { user: user, repo: repo, host: 'github.com', clone_uri: "git@github.com:#{user}/#{repo}" }
+    elsif uri.match(%r{^(https?)://([^/]+)/([^/]+)/([^/]+)(?:/.*)?$})
       # https://gitlab.com/user/repo or other git hosts
-      host, user, repo = $1, $2, $3
-      return { user: user, repo: repo, host: host }
+      scheme, host, user, repo = $1, $2, $3, $4.sub(/\.git$/, '')
+      return { user: user, repo: repo, host: host, clone_uri: "#{scheme}://#{host}/#{user}/#{repo}" }
     elsif uri.match(%r{^git@([^:]+):([^/]+)/([^/]+)})
       # git@host:user/repo
-      host, user, repo = $1, $2, $3
-      return { user: user, repo: repo, host: host }
+      host, user, repo = $1, $2, $3.sub(/\.git$/, '')
+      return { user: user, repo: repo, host: host, clone_uri: "git@#{host}:#{user}/#{repo}" }
     else
       return nil
     end
@@ -1160,13 +1176,14 @@ if __FILE__ == $0
       exit 1
     end
 
-    dir_name = generate_clone_directory_name(git_uri, custom_name)
-    unless dir_name
+    clone_target = parse_git_uri(git_uri)
+    unless clone_target
       warn "Error: Unable to parse git URI: #{git_uri}"
       exit 1
     end
 
-    script_clone(File.join(tries_path, dir_name), git_uri)
+    dir_name = generate_clone_directory_name(git_uri, custom_name)
+    script_clone(File.join(tries_path, dir_name), clone_target[:clone_uri], original_uri: git_uri, ref: clone_target[:ref])
   end
 
   def cmd_init!(args, tries_path)
@@ -1349,13 +1366,14 @@ if __FILE__ == $0
     # Git URL shorthand → clone workflow
     if is_git_uri?(search_term.split.first)
       git_uri, custom_name = search_term.split(/\s+/, 2)
-      dir_name = generate_clone_directory_name(git_uri, custom_name)
-      unless dir_name
+      clone_target = parse_git_uri(git_uri)
+      unless clone_target
         warn "Error: Unable to parse git URI: #{git_uri}"
         exit 1
       end
+      dir_name = generate_clone_directory_name(git_uri, custom_name)
       full_path = File.join(tries_path, dir_name)
-      return script_clone(full_path, git_uri)
+      return script_clone(full_path, clone_target[:clone_uri], original_uri: git_uri, ref: clone_target[:ref])
     end
 
     # Regular interactive selector
@@ -1416,8 +1434,19 @@ if __FILE__ == $0
     ["mkdir -p #{q(path)}"] + script_cd(path)
   end
 
-  def script_clone(path, uri)
-    ["mkdir -p #{q(path)}", "echo #{q("Using git clone to create this trial from #{uri}.")}", "git clone '#{uri}' #{q(path)}"] + script_cd(path)
+  def script_clone(path, uri, original_uri: uri, ref: nil)
+    clone_cmd = ["git clone"]
+    clone_cmd << "--branch #{q(ref)}" if ref
+    clone_cmd << q(uri)
+    clone_cmd << q(path)
+
+    message = if original_uri == uri
+      "Using git clone to create this trial from #{uri}."
+    else
+      "Using git clone to create this trial from #{original_uri} via #{uri}."
+    end
+
+    ["mkdir -p #{q(path)}", "echo #{q(message)}", clone_cmd.join(' ')] + script_cd(path)
   end
 
   def script_worktree(path, repo = nil)

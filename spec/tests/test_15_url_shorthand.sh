@@ -26,3 +26,18 @@ if echo "$output" | grep -q "git clone"; then
 else
     fail "bare URL should trigger git clone" "git clone command" "$output" "command_line.md#clone"
 fi
+
+# Test: GitHub tree page URL is normalized before cloning
+output=$(try_run --path="$TEST_TRIES" --and-exit exec https://github.com/user/repo/tree/main 2>&1)
+clone_line=$(echo "$output" | grep "^[[:space:]]*git clone")
+if echo "$clone_line" | grep -q "git clone --branch 'main' 'https://github.com/user/repo'"; then
+    pass
+else
+    fail "GitHub tree URL should clone the repository URL" "git clone --branch 'main' 'https://github.com/user/repo'" "$output" "command_line.md#clone"
+fi
+
+if echo "$clone_line" | grep -q "/tree/main"; then
+    fail "GitHub tree path should not be passed to git clone" "no /tree/main in git clone line" "$output" "command_line.md#clone"
+else
+    pass
+fi

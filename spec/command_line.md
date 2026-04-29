@@ -56,12 +56,13 @@ try <url> [name]            # URL shorthand (same as clone)
 ```
 
 **Arguments:**
-- `url` (required): Git repository URL
+- `url` (required): Git repository URL. GitHub repository page links are normalized to their clone URL.
 - `name` (optional): Custom name suffix (default: extracted from URL)
 
 **Behavior:**
 - Creates directory named `YYYY-MM-DD-<user>-<repo>` (extracted from URL)
 - Clones repository into that directory
+- Converts GitHub page links such as `/tree/<ref>` or `/blob/<ref>/...` to the repository URL before cloning
 - Returns shell script to cd into cloned directory
 
 **Examples:**
@@ -77,6 +78,9 @@ try https://github.com/tobi/try.git
 
 try clone git@github.com:tobi/try.git
 # SSH URL also works: 2025-11-30-tobi-try
+
+try clone https://github.com/tobi/try/tree/main
+# GitHub page link also works: clones https://github.com/tobi/try
 ```
 
 ### worktree
