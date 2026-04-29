@@ -1,10 +1,10 @@
 class Try < Formula
   desc "Fresh directories for every vibe - lightweight experiments for people with ADHD"
-  homepage "https://github.com/tobi/try"
+  homepage "https://github.com/SuperJony/try"
   url "https://github.com/tobi/try/archive/refs/tags/v1.0.0.tar.gz"
   sha256 "267f2b63561de396a8938c6f41e68e8cecc635d05c582a1f866c0bbf37676af2"
 
-  head "https://github.com/tobi/try.git", branch: "main"
+  head "https://github.com/SuperJony/try.git", branch: "main"
 
   depends_on "ruby"
 
