@@ -18,16 +18,16 @@
 #   fuzzy.match("proj").limit(10).each { |entry, positions, score| ... }
 #
 class Fuzzy
-  Entry = Data.define(:data, :text, :text_lower, :base_score)
+  Entry = Struct.new(:data, :text, :text_lower, :base_score)
 
   def initialize(entries)
     @entries = entries.map do |e|
       text = e[:text] || e["text"]
       Entry.new(
-        data: e,
-        text: text,
-        text_lower: text.downcase,
-        base_score: e[:base_score] || e["base_score"] || 0.0
+        e,
+        text,
+        text.downcase,
+        e[:base_score] || e["base_score"] || 0.0
       )
     end
   end

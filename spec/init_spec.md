@@ -36,6 +36,7 @@ try() {
 Key elements:
 - Function name: `try`
 - Captures `try exec` output to local variable
+- Calls the resolved `try` binary directly so package-managed shebangs choose the Ruby runtime
 - Redirects stderr to `/dev/tty` (TUI renders to stderr)
 - Exit code 0: Evaluates the output (executes cd, git clone, etc.)
 - Exit code non-0: Prints the output (shows error/cancellation message)

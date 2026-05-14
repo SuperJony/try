@@ -136,7 +136,7 @@ class TrySelector
   end
 
   # Result wrapper to avoid Hash#merge allocation per entry
-  TryEntry = Data.define(:data, :score, :highlight_positions) do
+  TryEntry = Struct.new(:data, :score, :highlight_positions) do
     def [](key)
       case key
       when :score then score
@@ -1280,12 +1280,13 @@ if __FILE__ == $0
   end
 
   def init_snippet(shell, script_path, explicit_path, default_path)
+    script_cmd = q(script_path)
     case shell
     when 'fish'
-      fish_path_arg = explicit_path ? " --path '#{explicit_path}'" : " --path (if set -q TRY_PATH; echo \"$TRY_PATH\"; else; echo '#{default_path}'; end)"
+      fish_path_arg = explicit_path ? " --path #{q(explicit_path)}" : " --path (if set -q TRY_PATH; echo \"$TRY_PATH\"; else; echo #{q(default_path)}; end)"
       <<~FISH
         function try
-          set -l out (/usr/bin/env ruby '#{script_path}' exec#{fish_path_arg} $argv 2>/dev/tty | string collect)
+          set -l out (#{script_cmd} exec#{fish_path_arg} $argv 2>/dev/tty | string collect)
           if test $pipestatus[1] -eq 0
             eval $out
           else
@@ -1295,15 +1296,15 @@ if __FILE__ == $0
       FISH
     when 'pwsh'
       ps_path_expr = if explicit_path
-        "'#{explicit_path}'"
+        psq(explicit_path)
       else
-        "$(if ($env:TRY_PATH) { $env:TRY_PATH } else { '#{default_path}' })"
+        "$(if ($env:TRY_PATH) { $env:TRY_PATH } else { #{psq(default_path)} })"
       end
       <<~PWSH
         function try {
           $tryPath = #{ps_path_expr}
           $tempErr = [System.IO.Path]::GetTempFileName()
-          $out = & ruby '#{script_path}' exec --path $tryPath @args 2>$tempErr
+          $out = & #{psq(script_path)} exec --path $tryPath @args 2>$tempErr
           if ($LASTEXITCODE -eq 0) {
             $out | Invoke-Expression
           } else {
@@ -1314,11 +1315,11 @@ if __FILE__ == $0
         }
       PWSH
     else # bash, zsh
-      path_arg = explicit_path ? " --path '#{explicit_path}'" : " --path \"${TRY_PATH:-#{default_path}}\""
+      path_arg = explicit_path ? " --path #{q(explicit_path)}" : " --path \"${TRY_PATH:-#{default_path}}\""
       <<~SH
         try() {
           local out
-          out=$(/usr/bin/env ruby '#{script_path}' exec#{path_arg} "$@" 2>/dev/tty)
+          out=$(#{script_cmd} exec#{path_arg} "$@" 2>/dev/tty)
           if [ $? -eq 0 ]; then
             eval "$out"
           else
@@ -1408,6 +1409,10 @@ if __FILE__ == $0
 
   def q(str)
     "'" + str.gsub("'", %q('"'"')) + "'"
+  end
+
+  def psq(str)
+    "'" + str.gsub("'", "''") + "'"
   end
 
   def emit_script(cmds)

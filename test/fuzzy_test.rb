@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "minitest/autorun"
+require "set"
 require_relative "../lib/fuzzy"
 
 class FuzzyTest < Minitest::Test

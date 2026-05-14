@@ -33,3 +33,26 @@ if echo "$output" | grep -qF "$TRY_BIN_PATH"; then
 else
     fail "init should contain real, full path to try binary" "$TRY_BIN_PATH" "$output" "init_spec.md"
 fi
+
+# Test: bash wrapper executes the try binary directly, preserving its shebang
+if echo "$output" | grep -qF "/usr/bin/env ruby"; then
+    fail "bash wrapper should not bypass the try shebang with env ruby" "direct '$TRY_BIN_PATH' invocation" "$output" "init_spec.md"
+elif echo "$output" | grep -qF "ruby '$TRY_BIN_PATH'"; then
+    fail "bash wrapper should not bypass the try shebang with ruby" "direct '$TRY_BIN_PATH' invocation" "$output" "init_spec.md"
+elif echo "$output" | grep -qF "'$TRY_BIN_PATH' exec"; then
+    pass
+else
+    fail "bash wrapper should execute try binary directly" "'$TRY_BIN_PATH' exec" "$output" "init_spec.md"
+fi
+
+# Test: fish wrapper executes the try binary directly, preserving its shebang
+output=$(SHELL=/usr/bin/fish try_run init "$TEST_TRIES" 2>&1)
+if echo "$output" | grep -qF "/usr/bin/env ruby"; then
+    fail "fish wrapper should not bypass the try shebang with env ruby" "direct '$TRY_BIN_PATH' invocation" "$output" "init_spec.md"
+elif echo "$output" | grep -qF "ruby '$TRY_BIN_PATH'"; then
+    fail "fish wrapper should not bypass the try shebang with ruby" "direct '$TRY_BIN_PATH' invocation" "$output" "init_spec.md"
+elif echo "$output" | grep -qF "'$TRY_BIN_PATH' exec"; then
+    pass
+else
+    fail "fish wrapper should execute try binary directly" "'$TRY_BIN_PATH' exec" "$output" "init_spec.md"
+fi
